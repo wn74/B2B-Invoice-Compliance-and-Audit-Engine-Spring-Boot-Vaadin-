@@ -1,10 +1,20 @@
 package domain;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.UUID;
-//TODO NULL HANDLING
+
+//TODO
+// [] NULL HANDLING
+// [] JPA ANNOTATIONS
+
 public class InvoiceEntry{
-    private UUID entryId;
+    private static final int SCALE_INTERMEDIATE = 4;
+    private static final int SCALE_FINAL = 2;
+    private static final RoundingMode ROUNDING = RoundingMode.HALF_UP;
+
+    private UUID entryId = UUID.randomUUID();
+    private Invoice invoice;
     private String productName;
     
     private BigDecimal quantity;
@@ -14,6 +24,8 @@ public class InvoiceEntry{
     private BigDecimal totalNetAmount;
     private BigDecimal totalGrossAmount;
     private BigDecimal taxAmount;
+
+    
 
     //Empty constructor for frameworks
     public InvoiceEntry(){
@@ -25,19 +37,25 @@ public class InvoiceEntry{
     this.quantity = quantity;
     this.unitPrice = unitPrice;
     this.taxRate = taxRate;
-    recalculateEverything(); // Instantly calculates Net, Tax, and Gross!
+    recalculateEverything(); 
     }
 
     public BigDecimal calculateTotalNetAmount(){
 
-        totalNetAmount = this.quantity.multiply(this.unitPrice);
+        BigDecimal intermediate = this.quantity.multiply(this.unitPrice).setScale(SCALE_INTERMEDIATE, ROUNDING);
+
+        this.totalNetAmount = intermediate.setScale(SCALE_FINAL, ROUNDING);
+
         return  totalNetAmount;
 
     }
 
     public BigDecimal calculateTaxAmount(BigDecimal totalNetAmount){
 
-        this.taxAmount = totalNetAmount.multiply(this.taxRate.getRate());
+        BigDecimal intermediate = totalNetAmount.multiply(this.taxRate.getRate()).setScale(SCALE_INTERMEDIATE, ROUNDING);
+
+        this.taxAmount = intermediate.setScale(SCALE_FINAL, ROUNDING);
+
         return taxAmount;
 
     }
@@ -45,7 +63,10 @@ public class InvoiceEntry{
     public BigDecimal calculateTotalGrossAmount(BigDecimal totalNetAmount, BigDecimal taxAmount){
 
         
-        this.totalGrossAmount = totalNetAmount.add(taxAmount);
+        BigDecimal intermediate = totalNetAmount.add(taxAmount).setScale(SCALE_INTERMEDIATE, ROUNDING);
+        
+        this.totalGrossAmount = intermediate.setScale(SCALE_FINAL, ROUNDING);       
+
         return  totalGrossAmount;
 
     }
@@ -71,6 +92,7 @@ public class InvoiceEntry{
 
     public void setProductName(String productName) {
         this.productName = productName;
+        
     }
 
     public BigDecimal getQuantity() {
@@ -79,6 +101,7 @@ public class InvoiceEntry{
 
     public void setQuantity(BigDecimal quantity) {
         this.quantity = quantity;
+        recalculateEverything();
     }
 
     public TaxRate getTaxRate() {
@@ -87,6 +110,7 @@ public class InvoiceEntry{
 
     public void setTaxRate(TaxRate taxRate) {
         this.taxRate = taxRate;
+        recalculateEverything();
     }
 
     public BigDecimal getUnitPrice() {
@@ -95,6 +119,7 @@ public class InvoiceEntry{
 
     public void setUnitPrice(BigDecimal unitPrice) {
         this.unitPrice = unitPrice;
+        recalculateEverything();
     }
 
     public BigDecimal getTotalNetAmount() {
@@ -108,8 +133,47 @@ public class InvoiceEntry{
     public BigDecimal getTaxAmount() {
         return taxAmount;
     }
+    public Invoice getInvoice() {
+        return invoice;
+    }
+    public void setInvoice(Invoice invoice) {
+        this.invoice = invoice;
+        
+    }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((entryId == null) ? 0 : entryId.hashCode());
+        return result;
+    }
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        InvoiceEntry other = (InvoiceEntry) obj;
+        if (entryId == null) {
+            if (other.entryId != null)
+                return false;
+        } else if (!entryId.equals(other.entryId))
+            return false;
+        return true;
+    }
 
+    @Override
+    public String toString() {
+        return "InvoiceEntry [entryId=" + entryId + ", productName=" + productName + ", quantity=" + quantity
+                + ", taxRate=" + taxRate + ", unitPrice=" + unitPrice + ", totalNetAmount=" + totalNetAmount
+                + ", totalGrossAmount=" + totalGrossAmount + ", taxAmount=" + taxAmount + "]";
+    }
+
+    
+    
    
 
 }
